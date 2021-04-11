@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:camera/camera.dart';
+import 'package:dumb_flutter_app/TagFilteredScreen.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
@@ -107,14 +108,32 @@ class HomeViewState extends State<HomeView> {
         child: ListView(
           children: [
             DrawerHeader(child: Text('Choose sorting key')),
-            TextField(controller: myController),
-            IconButton(
+            CupertinoSearchTextField(
+              style: TextStyle(color: Colors.white),
+              controller: myController,
+              onSubmitted: (value) {
+                print("Submitted text: " + value);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => TagFilteredScreen(
+                      // Pass the automatically generated path to
+                      // the DisplayPictureScreen widget.
+                      tag: value
+                    ),
+                  ),
+
+                );
+                savedFiles.where((x) => x.tags.contains(x)).toList();
+              },
+            ),
+            /*IconButton(
               //if myController.text is null make Toast Dummy
               //else search in tags, display,
                 icon: Icon(Icons.search),
-                onPressed: () => {print(myController.text)}),
+                onPressed: () => {print(myController.text)}),*/
             ListTile(
-              title: Text('sort by name'),
+              title: Text('Sort by name'),
               onTap: () {
                 setState(() {
                   savedFiles.sort((a, b) => a.name.compareTo(b.name));
@@ -123,7 +142,7 @@ class HomeViewState extends State<HomeView> {
               },
             ),
             ListTile(
-              title: Text('sort by date'),
+              title: Text('Sort by date'),
               onTap: () {
                 setState(() {
                   savedFiles.sort((a, b) => a.date.compareTo(b.date));
