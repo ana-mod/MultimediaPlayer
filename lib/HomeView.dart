@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:camera/camera.dart';
 import 'package:dumb_flutter_app/TagFilteredScreen.dart';
+import 'package:dumb_flutter_app/TakeVideoScreen.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
@@ -36,9 +37,47 @@ class HomeViewState extends State<HomeView> {
 
   @override
   void dispose() {
-    // Clean up the controller when the widget is disposed.
     myController.dispose();
     super.dispose();
+  }
+
+  Widget popup() => PopupMenuButton<MediaType>(
+        onSelected: (MediaType choice) {
+          setState(() {
+            route(choice);
+          });
+        },
+        itemBuilder: (BuildContext context) => <PopupMenuEntry<MediaType>>[
+          const PopupMenuItem<MediaType>(
+              value: MediaType.photo, child: Text('Take a photo')),
+          const PopupMenuItem<MediaType>(
+              value: MediaType.video, child: Text('Take a video')),
+          const PopupMenuItem<MediaType>(
+              value: MediaType.recording, child: Text('Take a voice record'))
+        ],
+        icon: Icon(CupertinoIcons.add_circled),
+      );
+
+  route(MediaType choice) {
+    switch (choice) {
+      case MediaType.photo:
+        Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (context) =>
+                    TakePictureScreen(camera: widget.camera)));
+        break;
+      case MediaType.video:
+        Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (context) =>
+                    TakeVideoScreen(camera: widget.camera)));
+        break;
+      case MediaType.recording:
+        print("rec");
+        break;
+    }
   }
 
   @override
@@ -58,9 +97,8 @@ class HomeViewState extends State<HomeView> {
                     },
                     onPanUpdate: (details) {
                       if (details.delta.dx < 0) {
-                        setState(() {
-                          savedFiles.removeAt(index);
-                        });
+                        savedFiles.removeAt(index);
+                        setState(() {});
                       }
                     },
                     onLongPress: () => {
@@ -95,14 +133,7 @@ class HomeViewState extends State<HomeView> {
           : Center(child: const Text('No items')),
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.pink[200],
-        child: Icon(CupertinoIcons.add_circled),
-        onPressed: () => {
-          Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (context) =>
-                      TakePictureScreen(camera: widget.camera)))
-        },
+        child: popup(),
       ),
       drawer: Drawer(
         child: ListView(
@@ -116,22 +147,12 @@ class HomeViewState extends State<HomeView> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => TagFilteredScreen(
-                      // Pass the automatically generated path to
-                      // the DisplayPictureScreen widget.
-                      tag: value
-                    ),
+                    builder: (context) => TagFilteredScreen(tag: value),
                   ),
-
                 );
                 savedFiles.where((x) => x.tags.contains(x)).toList();
               },
             ),
-            /*IconButton(
-              //if myController.text is null make Toast Dummy
-              //else search in tags, display,
-                icon: Icon(Icons.search),
-                onPressed: () => {print(myController.text)}),*/
             ListTile(
               title: Text('Sort by name'),
               onTap: () {

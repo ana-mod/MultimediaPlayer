@@ -62,7 +62,7 @@ class TagFilteredScreenState extends State<TagFilteredScreen> {
   }
 
   List<Media> filter(String tag) {
-    return savedFiles.where((value) => value.tags.contains(tag)).toList();
+    return savedFiles.where((value) => (value.tags.contains(tag) || value.name.contains(tag))).toList();
   }
 
   Text formatDate(DateTime date) {

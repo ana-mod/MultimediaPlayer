@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui';
 
 import 'package:audioplayers/audioplayers.dart';
 import 'package:camera/camera.dart';
@@ -7,11 +8,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_sound/flutter_sound.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:image_gallery_saver/image_gallery_saver.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:record/record.dart';
-
+import 'package:photofilters/photofilters.dart';
+import 'package:image/image.dart' as imageLib;
 import 'HomeView.dart';
 import 'Media.dart';
+import 'package:path/path.dart';
 
 class DisplayPictureScreen extends StatefulWidget {
   final String imagePath;
@@ -26,16 +27,16 @@ class DisplayPictureScreen extends StatefulWidget {
 class DisplayPictureScreenState extends State<DisplayPictureScreen> {
   final myNameController = TextEditingController();
   final myTagsController = TextEditingController();
-
-  String path;
+  List<Filter> filters = presetFiltersList;
+  File imageFile;
   AudioPlayer audioPlayer = AudioPlayer();
   FlutterSoundRecorder fsr = new FlutterSoundRecorder();
 
   @override
   void dispose() {
-    // Clean up the controller when the widget is disposed.
     myNameController.dispose();
     myTagsController.dispose();
+    //imageFile.delete();
     super.dispose();
   }
 
@@ -43,8 +44,6 @@ class DisplayPictureScreenState extends State<DisplayPictureScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(title: Text('Display the Picture')),
-        // The image is stored as a file on the device. Use the `Image.file`
-        // constructor with the given path to display the image.
         body: Column(
           mainAxisSize: MainAxisSize.max,
           children: [
@@ -53,19 +52,45 @@ class DisplayPictureScreenState extends State<DisplayPictureScreen> {
               children: [
                 IconButton(
                     icon: Icon(CupertinoIcons.crop),
-                    onPressed: () => {print("okejka")}),
+                    onPressed: () => {print("crop")}),
                 IconButton(
-                    icon: Icon(CupertinoIcons.color_filter),
-                    onPressed: () => {print("okejka")}),
+                  icon: Icon(CupertinoIcons.color_filter),
+                  onPressed: () async {
+                    Map imagefile = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => new PhotoFilterSelector(
+                          title: Text("Apply Filters"),
+                          image: imageLib.decodeImage(
+                              File(widget.imagePath).readAsBytesSync()),
+                          filters: presetFiltersList,
+                          filename: basename(widget.imagePath),
+                          loader: Center(child: CircularProgressIndicator()),
+                          fit: BoxFit.contain,
+                        ),
+                      ),
+                    );
+                    if (imagefile != null &&
+                        imagefile.containsKey('image_filtered')) {
+                      setState(() {
+                        imageFile = imagefile['image_filtered'];
+                      });
+
+                    }
+                  },
+                ),
                 CupertinoButton.filled(
                     child: Text('SAVE',
                         style: TextStyle(
-                            fontWeight: FontWeight.bold, )
-                         ),
+                          fontWeight: FontWeight.bold,
+                        )),
                     onPressed: () => {this.savePhoto()})
               ],
             ),
-            Expanded(child: Image.file(File(widget.imagePath))),
+            Expanded(
+                child: imageFile == null
+                    ? Image.file(File(widget.imagePath))
+                    : RotatedBox(quarterTurns: 1, child: Image.file(imageFile),)),
             Row(
               children: [
                 Expanded(
@@ -89,18 +114,22 @@ class DisplayPictureScreenState extends State<DisplayPictureScreen> {
 
   void savePhoto() async {
     try {
-      final bytes = await File(widget.imagePath).readAsBytes();
+
+      var path = imageFile==null ? widget.imagePath : imageFile.path;
+
+      final bytes = await File(path).readAsBytes();
       final byteData = bytes.buffer.asUint8List();
       final result = await ImageGallerySaver.saveImage(byteData, quality: 60);
-      Media media = new Media(widget.imagePath, myNameController.text, DateTime.now(),
-          false, Colors.blue, myTagsController.text.split(' '));
+
+      Media media = new Media(path, myNameController.text,
+          DateTime.now(), false, Colors.blue, myTagsController.text.split(' '));
 
       savedFiles.add(media);
 
       _toastInfo("Saved as " + media.name);
 
       Navigator.push(
-          context,
+          this.context,
           MaterialPageRoute(
               builder: (context) => HomeView(camera: widget.camera)));
     } catch (e) {
@@ -112,7 +141,7 @@ class DisplayPictureScreenState extends State<DisplayPictureScreen> {
     Fluttertoast.showToast(msg: info, toastLength: Toast.LENGTH_LONG);
   }
 
-  Future<String> getPath() async {
+ /* Future<String> getPath() async {
     final dir = await getApplicationDocumentsDirectory();
     path = dir.path +
         '/' +
@@ -124,5 +153,5 @@ class DisplayPictureScreenState extends State<DisplayPictureScreen> {
 
   playLocal() async {
     int result = await audioPlayer.play(path, isLocal: true);
-  }
+  }*/
 }
